@@ -53,10 +53,11 @@ async function parseOne(file) {
 }
 
 runBtn.addEventListener("click", async () => {
-  const files = Array.from(fileInput.files || []);
+  const allFiles = Array.from(fileInput.files || []);
+  const files = allFiles.filter((f) => /\.(eml|msg)$/i.test(f.name));
   if (files.length === 0) {
     statusEl.className = "error";
-    statusEl.textContent = "Select at least one .eml/.msg file first.";
+    statusEl.textContent = "No .eml/.msg files found in the selected folder.";
     return;
   }
 

@@ -1,9 +1,9 @@
 # Email Parser
 
-Web app that reads `.eml`/`.msg` email files you upload from your browser, extracts
-four columns (Name, Phone, Subject, Urgency) using the Groq API, and lets you download
-the result as an Excel file. Works both locally and deployed to a host like Vercel,
-since all processing happens through your browser upload — the server never needs
+Web app that reads `.eml`/`.msg` email files from a folder you select in your browser,
+extracts four columns (Name, Phone, Subject, Urgency) using the Groq API, and lets you
+download the result as an Excel file. Works both locally and deployed to a host like
+Vercel, since all processing happens through browser upload — the server never needs
 access to your local filesystem.
 
 ## Setup (local)
@@ -34,9 +34,11 @@ access to your local filesystem.
 
 ## Usage
 
-1. Click the file picker and select one or more `.eml`/`.msg` files.
-2. Click **Run**. Each file is uploaded and parsed one at a time; the progress bar and
-   results table update as each one finishes.
+1. Click the picker and choose the folder containing your `.eml`/`.msg` files (the
+   browser opens a native folder dialog and hands over every file inside it).
+2. Click **Run**. Non-email files in the folder are ignored; each `.eml`/`.msg` file is
+   uploaded and parsed one at a time, with the progress bar and results table updating
+   as each one finishes.
 3. Once done, click **Download Excel** to save `parsed_emails.xlsx` (header row
    `Name | Phone | Subject | Urgency`, one row per successfully parsed email).
 
@@ -47,3 +49,5 @@ access to your local filesystem.
   of the batch.
 - Files are processed sequentially, one request per email — for very large batches this
   is slower than parallel processing, but keeps each request small and serverless-friendly.
+- The folder picker (`webkitdirectory`) is supported in Chrome, Edge, and Safari; Firefox
+  support is more limited.
