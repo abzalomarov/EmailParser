@@ -1,0 +1,6 @@
+flask
+python-dotenv
+extract-msg
+openpyxl
+beautifulsoup4
+groq

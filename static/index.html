@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Email Parser</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Email Parser</h1>
+  <p class="subtitle">Extracts name, phone, subject and urgency from a folder of emails into a downloadable Excel file.</p>
+
+  <div class="field">
+    <label for="folderPath">Emails folder (absolute path)</label>
+    <div class="row">
+      <input id="folderPath" type="text" placeholder="C:\Users\you\Desktop\emails" />
+      <button id="browseFolderBtn" type="button" class="secondary">Browse...</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <button id="runBtn">Run</button>
+    <button id="downloadBtn" type="button" hidden>Download Excel</button>
+  </div>
+  <span id="status"></span>
+
+  <div id="progressWrap" hidden>
+    <div class="progress-bar">
+      <div id="progressFill" class="progress-fill"></div>
+    </div>
+    <span id="progressLabel"></span>
+  </div>
+
+  <table id="resultsTable" hidden>
+    <thead>
+      <tr>
+        <th>Filename</th>
+        <th>Status</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Subject</th>
+        <th>Urgency</th>
+        <th>Error</th>
+      </tr>
+    </thead>
+    <tbody id="resultsBody"></tbody>
+  </table>
+
+  <script src="app.js"></script>
+</body>
+</html>
