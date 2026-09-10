@@ -7,14 +7,11 @@
 </head>
 <body>
   <h1>Email Parser</h1>
-  <p class="subtitle">Extracts name, phone, subject and urgency from a folder of emails into a downloadable Excel file.</p>
+  <p class="subtitle">Extracts name, phone, subject and urgency from your emails into a downloadable Excel file.</p>
 
   <div class="field">
-    <label for="folderPath">Emails folder (absolute path)</label>
-    <div class="row">
-      <input id="folderPath" type="text" placeholder="C:\Users\you\Desktop\emails" />
-      <button id="browseFolderBtn" type="button" class="secondary">Browse...</button>
-    </div>
+    <label for="emailFiles">Email files (.eml / .msg)</label>
+    <input id="emailFiles" type="file" multiple accept=".eml,.msg" />
   </div>
 
   <div class="row">

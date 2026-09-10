@@ -1,6 +1,6 @@
 const runBtn = document.getElementById("runBtn");
 const downloadBtn = document.getElementById("downloadBtn");
-const browseFolderBtn = document.getElementById("browseFolderBtn");
+const fileInput = document.getElementById("emailFiles");
 const statusEl = document.getElementById("status");
 const table = document.getElementById("resultsTable");
 const tbody = document.getElementById("resultsBody");
@@ -8,7 +8,7 @@ const progressWrap = document.getElementById("progressWrap");
 const progressFill = document.getElementById("progressFill");
 const progressLabel = document.getElementById("progressLabel");
 
-let pollTimer = null;
+let downloadUrl = null;
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -41,87 +41,78 @@ function setProgress(done, total) {
   progressLabel.textContent = `${done} / ${total}`;
 }
 
-async function poll() {
-  try {
-    const resp = await fetch("/api/progress");
-    const data = await resp.json();
-
-    setProgress(data.done, data.total);
-    renderResults(data.results);
-
-    if (!data.running) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-      runBtn.disabled = false;
-
-      if (data.summary) {
-        const s = data.summary;
-        statusEl.className = "";
-        statusEl.textContent = `Found ${s.total_found}, processed ${s.processed}, errors ${s.errors}.`;
-      }
-      downloadBtn.hidden = !data.download_ready;
-    }
-  } catch (err) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-    runBtn.disabled = false;
-    statusEl.className = "error";
-    statusEl.textContent = "Lost connection while polling progress: " + err.message;
+async function parseOne(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const resp = await fetch("/api/parse-one", { method: "POST", body: formData });
+  const data = await resp.json();
+  if (!resp.ok) {
+    return { filename: file.name, status: "error", error: data.error || "Request failed." };
   }
+  return data;
 }
 
-browseFolderBtn.addEventListener("click", async () => {
-  browseFolderBtn.disabled = true;
-  try {
-    const resp = await fetch("/api/browse-folder");
-    const data = await resp.json();
-    if (data.path) {
-      document.getElementById("folderPath").value = data.path;
-    }
-  } catch (err) {
-    statusEl.className = "error";
-    statusEl.textContent = "Browse failed: " + err.message;
-  } finally {
-    browseFolderBtn.disabled = false;
-  }
-});
-
 runBtn.addEventListener("click", async () => {
-  const folder_path = document.getElementById("folderPath").value.trim();
+  const files = Array.from(fileInput.files || []);
+  if (files.length === 0) {
+    statusEl.className = "error";
+    statusEl.textContent = "Select at least one .eml/.msg file first.";
+    return;
+  }
+
+  if (downloadUrl) {
+    URL.revokeObjectURL(downloadUrl);
+    downloadUrl = null;
+  }
 
   statusEl.className = "";
-  statusEl.textContent = "Starting...";
+  statusEl.textContent = `Processing ${files.length} email(s)...`;
   downloadBtn.hidden = true;
   runBtn.disabled = true;
   progressWrap.hidden = false;
-  setProgress(0, 0);
+  setProgress(0, files.length);
   renderResults([]);
 
-  try {
-    const resp = await fetch("/api/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ folder_path }),
-    });
-    const data = await resp.json();
+  const results = [];
+  for (const file of files) {
+    const result = await parseOne(file);
+    results.push(result);
+    renderResults(results);
+    setProgress(results.length, files.length);
+  }
 
-    if (!resp.ok) {
+  const processed = results.filter((r) => r.status === "processed");
+  const errors = results.length - processed.length;
+  statusEl.textContent = `Found ${results.length}, processed ${processed.length}, errors ${errors}.`;
+  runBtn.disabled = false;
+
+  if (processed.length > 0) {
+    try {
+      const resp = await fetch("/api/generate-excel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: processed }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json();
+        throw new Error(data.error || "Failed to generate Excel file.");
+      }
+      const blob = await resp.blob();
+      downloadUrl = URL.createObjectURL(blob);
+      downloadBtn.hidden = false;
+    } catch (err) {
       statusEl.className = "error";
-      statusEl.textContent = data.error || "Request failed.";
-      runBtn.disabled = false;
-      return;
+      statusEl.textContent = "Excel generation failed: " + err.message;
     }
-
-    setProgress(0, data.total);
-    statusEl.textContent = `Processing ${data.total} email(s)...`;
-    pollTimer = setInterval(poll, 500);
-  } catch (err) {
-    statusEl.className = "error";
-    statusEl.textContent = "Request failed: " + err.message;
-    runBtn.disabled = false;
   }
 });
 
 downloadBtn.addEventListener("click", () => {
-  window.location = "/api/download";
+  if (!downloadUrl) return;
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = "parsed_emails.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 });
